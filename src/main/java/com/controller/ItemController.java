@@ -15,8 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-
+import com.model.BoughtItems;
 import com.model.Item;
+import com.repo.BoughtItemsRepo;
 import com.repo.ItemRepo;
 
 
@@ -29,6 +30,8 @@ public class ItemController {
 	
 	@Autowired
 	ItemRepo itemRepo;
+	@Autowired
+	BoughtItemsRepo boughtRepo;
 	
 	
 	@PutMapping(value = "/addItem" , produces="application/json")
@@ -79,5 +82,60 @@ public class ItemController {
 	}
 
 	}
+	@PostMapping(value = "/buyItem" , produces="application/json")
+	public ResponseEntity<?> buyItems(@RequestBody Item item){
+		Item itemToBuy=item;
+		int itemId=itemToBuy.getId();
+		System.out.println(item);
+		try {
+			if(boughtRepo.findById(itemId).isPresent()) {
+				BoughtItems itemToUpdate=boughtRepo.findById(itemId).get();
+						int numsOfOrder=itemToUpdate.getNums();
+						itemToUpdate.setNums(numsOfOrder +1 );
+							boughtRepo.save(itemToUpdate);
+						
+				}
+				else {
+					
+					BoughtItems itemNewBuy=new BoughtItems();
+						itemNewBuy.setId(item.getId());
+						itemNewBuy.setTitle(item.getTitle());
+						itemNewBuy.setDescription(item.getDescription());
+						itemNewBuy.setPrice(item.getPrice());
+						itemNewBuy.setImage(item.getImage());
+						System.out.println(itemNewBuy);
+					boughtRepo.save(itemNewBuy);
+				}
+			
+			return new ResponseEntity<String>("Item added",HttpStatus.OK);
+			}
+		catch (Exception e) {
+			return new ResponseEntity<String>("Error ",HttpStatus.BAD_REQUEST);
+		}
+		
+	}
+	
+	@GetMapping(value = "/getAllBoughtItems")
+	public ResponseEntity<?> getAllBoughtItems() {
+
+	try {
+		return new ResponseEntity<List<BoughtItems>>(boughtRepo.findAll(),HttpStatus.OK);
+	}catch (Exception e) {
+		return new ResponseEntity<String>("no Items found",HttpStatus.BAD_REQUEST);
+
+	}
+
+	}
+	@GetMapping(value = "/getStats")
+	public ResponseEntity<?> getStatsOrderedItems(){
+		try {
+			return new ResponseEntity<List<BoughtItems>>(boughtRepo.findAllByOrderByNumsDesc(),HttpStatus.OK);
+		}catch (Exception e) {
+			return new ResponseEntity<String>("no Items found",HttpStatus.BAD_REQUEST);
+		}
+		
+	}
+	
+
 
 }
